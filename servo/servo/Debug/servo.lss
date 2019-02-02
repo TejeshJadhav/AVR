@@ -212,8 +212,8 @@ void servo_2_free (void) //makes servo 2 free rotating
  150:	78 94       	sei
  152:	08 95       	ret
 
-00000154 <_Z7servo_1h>:
- 154:	10 92 89 00 	sts	0x0089, r1	; 0x800089 <__TEXT_REGION_LENGTH__+0x700089>
+00000154 <_Z7servo_2h>:
+ 154:	10 92 8b 00 	sts	0x008B, r1	; 0x80008b <__TEXT_REGION_LENGTH__+0x70008b>
  158:	68 2f       	mov	r22, r24
  15a:	70 e0       	ldi	r23, 0x00	; 0
  15c:	80 e0       	ldi	r24, 0x00	; 0
@@ -230,23 +230,23 @@ void servo_2_free (void) //makes servo 2 free rotating
  172:	52 e4       	ldi	r21, 0x42	; 66
  174:	34 d0       	rcall	.+104    	; 0x1de <__addsf3>
  176:	ff d0       	rcall	.+510    	; 0x376 <__fixunssfsi>
- 178:	60 93 88 00 	sts	0x0088, r22	; 0x800088 <__TEXT_REGION_LENGTH__+0x700088>
+ 178:	60 93 8a 00 	sts	0x008A, r22	; 0x80008a <__TEXT_REGION_LENGTH__+0x70008a>
  17c:	08 95       	ret
 
 0000017e <main>:
-//Function to rotate Servo 2 by a specified angle in the multiples of 1.86 degrees
-void servo_2(unsigned char degrees)
+//Function to rotate Servo 1 by a specified angle in the multiples of 1.86 degrees
+void servo_1(unsigned char degrees)  
 {
- float PositionTiltServo = 0;
- PositionTiltServo = ((float)degrees / 1.86) + 35.0;
- OCR1BH = 0x00;
+ float PositionPanServo = 0;
+  PositionPanServo = ((float)degrees / 1.86) + 35.0;
+ OCR1AH = 0x00;
  17e:	0f 2e       	mov	r0, r31
- 180:	fb e8       	ldi	r31, 0x8B	; 139
+ 180:	f9 e8       	ldi	r31, 0x89	; 137
  182:	ef 2e       	mov	r14, r31
  184:	f1 2c       	mov	r15, r1
  186:	f0 2d       	mov	r31, r0
- OCR1BL = (unsigned char) PositionTiltServo;
- 188:	0a e8       	ldi	r16, 0x8A	; 138
+ OCR1AL = (unsigned char) PositionPanServo;
+ 188:	08 e8       	ldi	r16, 0x88	; 136
  18a:	10 e0       	ldi	r17, 0x00	; 0
  18c:	d3 e5       	ldi	r29, 0x53	; 83
 int main(void)
@@ -256,28 +256,29 @@ while(1)
  unsigned char i = 0;
  init_devices();
  18e:	dd df       	rcall	.-70     	; 0x14a <_Z12init_devicesv>
-//Function to rotate Servo 2 by a specified angle in the multiples of 1.86 degrees
-void servo_2(unsigned char degrees)
+//Function to rotate Servo 1 by a specified angle in the multiples of 1.86 degrees
+void servo_1(unsigned char degrees)  
 {
- float PositionTiltServo = 0;
- PositionTiltServo = ((float)degrees / 1.86) + 35.0;
- OCR1BH = 0x00;
+ float PositionPanServo = 0;
+  PositionPanServo = ((float)degrees / 1.86) + 35.0;
+ OCR1AH = 0x00;
  190:	f7 01       	movw	r30, r14
  192:	10 82       	st	Z, r1
- OCR1BL = (unsigned char) PositionTiltServo;
+ OCR1AL = (unsigned char) PositionPanServo;
  194:	f8 01       	movw	r30, r16
  196:	d0 83       	st	Z, r29
-while(1)
 {
  unsigned char i = 0;
  init_devices();
- servo_2(90);	
+ //servo_2(70);	
+ servo_1(90);
  for (i = 0; i < 80; i++)
  198:	c0 e0       	ldi	r28, 0x00	; 0
  {
-  servo_1(i);
+  //servo_1(i);
+  servo_2(i);
  19a:	8c 2f       	mov	r24, r28
- 19c:	db df       	rcall	.-74     	; 0x154 <_Z7servo_1h>
+ 19c:	db df       	rcall	.-74     	; 0x154 <_Z7servo_2h>
 	#else
 		//round up by default
 		__ticks_dc = (uint32_t)(ceil(fabs(__tmp)));
@@ -291,11 +292,11 @@ while(1)
  1a6:	20 40       	sbci	r18, 0x00	; 0
  1a8:	80 40       	sbci	r24, 0x00	; 0
  1aa:	e1 f7       	brne	.-8      	; 0x1a4 <main+0x26>
-while(1)
 {
  unsigned char i = 0;
  init_devices();
- servo_2(90);	
+ //servo_2(70);	
+ servo_1(90);
  for (i = 0; i < 80; i++)
  1ac:	cf 5f       	subi	r28, 0xFF	; 255
  1ae:	c0 35       	cpi	r28, 0x50	; 80
@@ -308,15 +309,15 @@ while(1)
  1bc:	f0 40       	sbci	r31, 0x00	; 0
  1be:	e1 f7       	brne	.-8      	; 0x1b8 <main+0x3a>
  1c0:	00 c0       	rjmp	.+0      	; 0x1c2 <main+0x44>
-  _delay_ms(20);
  }
  _delay_ms(5000);
  for (i = 80; i > 0; i--)
  {
-	 servo_1(i);
+	// servo_1(i);
+	 servo_2(i);
  1c2:	00 00       	nop
  1c4:	8c 2f       	mov	r24, r28
- 1c6:	c6 df       	rcall	.-116    	; 0x154 <_Z7servo_1h>
+ 1c6:	c6 df       	rcall	.-116    	; 0x154 <_Z7servo_2h>
  1c8:	26 e6       	ldi	r18, 0x66	; 102
  1ca:	86 ee       	ldi	r24, 0xE6	; 230
  1cc:	90 e0       	ldi	r25, 0x00	; 0
@@ -324,8 +325,8 @@ while(1)
  1d0:	80 40       	sbci	r24, 0x00	; 0
  1d2:	90 40       	sbci	r25, 0x00	; 0
  1d4:	e1 f7       	brne	.-8      	; 0x1ce <main+0x50>
- {
-  servo_1(i);
+  //servo_1(i);
+  servo_2(i);
   _delay_ms(20);
  }
  _delay_ms(5000);

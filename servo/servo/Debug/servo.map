@@ -36,7 +36,7 @@ Discarded input sections
  .text          0x00000000        0x0 main.o
  .data          0x00000000        0x0 main.o
  .bss           0x00000000        0x0 main.o
- .text._Z7servo_2h
+ .text._Z7servo_1h
                 0x00000000       0x32 main.o
  .text._Z12servo_1_freev
                 0x00000000        0xe main.o
@@ -353,9 +353,9 @@ END GROUP
  .text._Z12init_devicesv
                 0x0000014a        0xa main.o
                 0x0000014a                _Z12init_devicesv
- .text._Z7servo_1h
+ .text._Z7servo_2h
                 0x00000154       0x2a main.o
-                0x00000154                _Z7servo_1h
+                0x00000154                _Z7servo_2h
  .text.main     0x0000017e       0x5e main.o
                 0x0000017e                main
  .text.avr-libc.fplib

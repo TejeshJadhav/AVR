@@ -124,16 +124,19 @@ while(1)
 {
  unsigned char i = 0;
  init_devices();
- servo_2(90);	
+ //servo_2(70);	
+ servo_1(90);
  for (i = 0; i < 80; i++)
  {
-  servo_1(i);
+  //servo_1(i);
+  servo_2(i);
   _delay_ms(20);
  }
  _delay_ms(5000);
  for (i = 80; i > 0; i--)
  {
-	 servo_1(i);
+	// servo_1(i);
+	 servo_2(i);
 	 _delay_ms(20);
  } 
 
