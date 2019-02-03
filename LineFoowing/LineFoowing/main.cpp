@@ -6,15 +6,23 @@
 #include <string.h>
 #include <stdlib.h>
 #include "lcd.c"
-#include "locomotion.h"
 
 bool debug = false;
+
+int x = 0, y = 1;
+char curr_dir = 's';
+int habitats[25];
 
 void port_init();
 void timer5_init();
 void velocity(unsigned char, unsigned char);
 void read_line_sensor();
 
+volatile unsigned long int ShaftCountLeft = 0; //to keep track of left position encoder
+volatile unsigned long int ShaftCountRight = 0; //to keep track of right position encoder
+unsigned int Degrees; //to accept angle in degrees for turning
+char last_state = 'c';
+unsigned int node_count = 0;
 
 volatile bool delimit = false;
 volatile bool slashnflag = false;
@@ -29,11 +37,9 @@ unsigned char Right_white_line = 0;
 
 
 char data[25];
-char h[25];
-char a[25];
+char h[25] = "16";
+char a[25] = "C1";
 int data_count = 0;
-
-
 
 struct coor
 {
@@ -43,7 +49,7 @@ struct coor
 
 struct cell
 {
-	int num;
+	int pref_node;
 	int cor[4][2];
 };
 
@@ -55,17 +61,40 @@ struct animal
 
 struct animal animals[20];
 struct cell cells[25];
+struct coor animals_destinations[20];
+struct coor curr,dest;
+
+void def_animals()
+{
+
+	for(int i=0; i <= 5; i++)
+	{
+		animals[i].name[0] = (char)65;
+		animals[i].name[1] = (char) 49 + i;
+	}
+	strcpy(animals[6].name, "B6");
+	strcpy(animals[7].name, "C6");
+	strcpy(animals[8].name, "D6");
+	strcpy(animals[9].name, "E6");
+	for(int i=10; i <= 15; i++)
+	{
+		animals[i].name[0] = (char)70;
+		animals[i].name[1] = (char) 48 + (16 - i);
+	}
+	strcpy(animals[16].name, "E1");
+	strcpy(animals[17].name, "D1");
+	strcpy(animals[18].name, "C1");
+	strcpy(animals[19].name, "B1");
+}
 
 void def_cells()
 {
 	int a = 0,b = 0;
-	int x = 0, y = 1;
 	int count = 0;
 	for(b = 0; b < 5; b++)
 	{
 		for(a = 0; a < 5; a++ )
 		{
-			cells[count].num = count;
 			
 			cells[count].cor[0][x] = a;
 			cells[count].cor[0][y] = b;
@@ -415,7 +444,7 @@ void soft_right (void) //Left wheel forward, Right wheel is stationary
 void left_degrees(unsigned int Degrees)
 {
 	// 88 pulses for 360 degrees rotation 4.090 degrees per count
-	velocity(255,255);
+	velocity(150,150);
 	left(); //Turn left
 	angle_rotate(Degrees);
 	last_state = 'l';
@@ -424,7 +453,7 @@ void left_degrees(unsigned int Degrees)
 void right_degrees(unsigned int Degrees)
 {
 	// 88 pulses for 360 degrees rotation 4.090 degrees per count
-	velocity(255,255);
+	velocity(150,150);
 	right(); //Turn right
 	angle_rotate(Degrees);
 	last_state = 'r';
@@ -612,10 +641,11 @@ void line_follow()
 	else if(Center_white_line>0x15 && Left_white_line>0x15 && Right_white_line>0x15)
 	{
 		//_delay_ms(300);
-		forward_mm(120);
+		forward_mm(50);
 		stop();
 		velocity(0,0);
 		node_count++;
+		lcd_print(1,1,node_count,2);
 		if (last_state == 'l')
 		{
 			last_state = 'r';
@@ -668,6 +698,7 @@ void line_follow()
 		lcd_print(1,13,node_count,2);
 	}
 	}
+	//_delay_ms(200);
 }
 
 
@@ -681,12 +712,13 @@ void smart_left()
 	while(1)
 	{
 		read_line_sensor();
-		if(Left_white_line > 0x15)
+		if(Center_white_line > 0x15)
 		{
 			stop();
-			vel = vel - 10;
-			if(vel<60) vel=60;
+			vel = vel - 5;
 			velocity(vel,vel);
+			last_state = 'l';
+			//read_line_sensor();
 			break;	
 		}
 	}
@@ -696,17 +728,19 @@ void smart_right()
 {
 	right();
 	velocity(150,150);
-	_delay_ms(200);
+	//_delay_ms(200);
 	read_line_sensor();
 	unsigned char vel = 255;
 	while(1)
 	{
 		read_line_sensor();
-		if(Right_white_line > 0x15)
+		if(Center_white_line > 0x15)
 		{
 			stop();
 			vel = vel - 5;
 			velocity(vel,vel);
+			last_state = 'r';
+			//read_line_sensor();
 			break;
 		}
 	}
@@ -763,18 +797,167 @@ void pick_from_right()
 	soft_left_degrees(80);
 }
 
+void parse_string_habitats(char *inp)
+{
+	int index = 0;
+	for(int i=0;inp[i] != '\0'; i++)
+	{
+		if(i == 0)
+		{
+			habitats[index++] = atoi(inp);
+			//printf("%d ",atoi(inp));
+		}
+		else if (inp[i] == ' ')
+		{
+			habitats[index++] = atoi(&inp[i+1]);
+			//printf("%d ",atoi(&inp[i+1]));
+		}
+	}
+}
+
+int parse_string_animals(char *str)
+{
+	static int index = 0;
+	char *token = strtok(str, ",");
+	while (token != NULL)
+	{
+		//printf("%s\n", token);
+		int xaxis = (int)token[0] - 65;
+		int yaxis = atoi(&token[1]) - 1;
+		animals_destinations[index].x = xaxis;
+		animals_destinations[index].y = yaxis;
+		index++;
+		//printf("(%d,%d) ",xaxis,yaxis);
+		token = strtok(NULL, ", ");
+	}
+	return index;
+}
+
+struct coor nearest(struct coor current, int dest_cell)
+{
+	struct coor near_node;
+	int x,y,dist_diff;
+	x = cells[dest_cell-1].cor[0][0];
+	y = cells[dest_cell-1].cor[0][1];
+
+	for(int i=0; i<4; i++)
+	{
+		dist_diff = (abs(current.x-cells[dest_cell-1].cor[i][0]) + abs(current.y-cells[dest_cell-1].cor[i][1])) - (abs(current.x- x) + abs(current.y - y));
+		if(dist_diff<0)
+		{
+			x = cells[dest_cell-1].cor[i][0];
+			y = cells[dest_cell-1].cor[i][1];
+			cells[dest_cell-1].pref_node = i;
+		}
+	}
+	near_node.x = x;
+	near_node.y = y;
+	return near_node;
+}
+
+struct coor displacement(struct coor current, struct coor destination)
+{
+	struct coor temp;
+	temp.x = destination.x - current.x;
+	temp.y = destination.y - current.y;
+	return temp;
+}
+
+void dir_transform(char now_dir, char dest_dir)
+{
+	char arr[5] = "dlsr";
+	int rot,diff;
+	int now_index = 0,dest_index = 0;
+	for(int i=0; i < 4; i++)
+	{
+		
+		if(now_dir == arr[i]) now_index = i;
+		if(dest_dir == arr[i]) dest_index = i;
+	}
+	rot = abs(dest_index - now_index) % 3;
+	diff = (dest_index - now_index);
+	if(rot<2)
+	{
+		if(abs(diff) <= 2)
+		{
+			if(diff < 0) left_degrees(85); //smart_right();} //printf("left turn\n");
+			else if(diff > 0 ) right_degrees(85); //smart_left();} //printf("right turn\n");
+			//printf("do nothing\n");
+		}
+		else
+		{
+			if(diff > 0) left_degrees(85); //smart_right();} //printf("left turn\n");
+			else right_degrees(85); //smart_left();}//printf("right turn\n");
+		}
+		//read_line_sensor();
+		//_delay_ms(200);
+	}
+	else
+	{
+		right_degrees(170);
+		//smart_right(); //printf("right turn\n");
+		//smart_right(); //printf("right turn\n");
+	}
+	curr_dir = dest_dir;
+}
+
+void do_movement(struct coor arr[], int num)
+{
+	for(int i=0; i < num; i++)
+	{
+		if(arr[i].y > 0) dir_transform(curr_dir,'s');
+		if(arr[i].y < 0) dir_transform(curr_dir,'d');
+		//printf("linefoow * %d\n", abs(arr[i].y));
+		for(int t=0; t < arr[i].y; t++)
+			line_follow();
+		if(arr[i].x > 0) dir_transform(curr_dir,'r');
+		if(arr[i].x < 0) dir_transform(curr_dir,'l');
+		//printf("linefoow * %d\n", abs(arr[i].x));
+		for(int t=0; t < arr[i].x; t++)
+			line_follow();
+	}
+}
+
 //Main Function
 int main()
 {
 	init_devices();
+	struct coor disp[40];
+	curr.x = 0;
+	curr.y = 0;
+	def_cells();
+	def_animals();
+	/*while(1)
+	{
+		left_degrees(85);
+		_delay_ms(1000);
+	}
+	while(!(delimit == true  && button_flag == true))
+	{
+		_delay_ms(1);
+	}*/
+	int num = 2 * parse_string_animals(a);
+	parse_string_habitats(h);
+	for(int i=0; i < num; i += 2)
+	{
+	    struct coor temp;
+	    
+	    disp[i] = displacement(curr, animals_destinations[i/2]);
+	    curr = animals_destinations[i/2];
+	    temp = nearest(curr, habitats[i/2]);
+	    //printf("%d ", a[i].x);
+	    //printf("%d\n", a[i].y);
+	    disp[i+1] = displacement(curr, temp);
+	    //printf("%d ", a[i+1].x);
+	    //printf("%d\n", a[i+1].y);
+	    curr = temp;
+    }
+	do_movement(disp, num);
 	//_delay_ms(5000);
 	//lcd_cursor(1,1);
 	
 	/*nagada();
-	while(!(delimit == true  && button_flag == true))
-	{
-		_delay_ms(1);
-	}
+
 	while(1)
 	{
 		_delay_ms(200);
@@ -792,8 +975,7 @@ int main()
 		//left_degrees(70);  //65 pe working properly;
 		//_delay_ms(500);
 	}*/
-	nagada();
-	while(1)
+	/*while(1)
 	{
 		//nagada();
 		line_follow();
@@ -804,8 +986,8 @@ int main()
 		_delay_ms(200);
 		pick_from_left();
 	}
-	/*while(1)
+	while(1)
 	{
-		read_proximity();
+		do_movement(disp);
 	}*/
 }
