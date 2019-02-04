@@ -775,28 +775,51 @@ void drop()
 	servo_1_free();
 }
 
-void pick_from_left()
+void drop_to_left(int deg)
 {
 	velocity(200,200);
-	soft_left_2_degrees(80);
+	soft_left_degrees(deg);
 	_delay_ms(200);
-	back_mm(30);
 	stop();
-	pick();
+	drop();
 	_delay_ms(200);
-	soft_right_degrees(80);
+	soft_left_2_degrees(deg);
 }
 
-void pick_from_right()
+void drop_to_right(int deg)
 {
 	velocity(200,200);
-	soft_right_2_degrees(80);
+	soft_right_degrees(deg);
+	_delay_ms(200);
+	stop();
+	drop();
+	_delay_ms(200);
+	soft_right_2_degrees(deg);
+}
+
+
+void pick_from_left(int deg)
+{
+	velocity(200,200);
+	soft_left_2_degrees(deg);
 	_delay_ms(200);
 	back_mm(30);
 	stop();
 	pick();
 	_delay_ms(200);
-	soft_left_degrees(80);
+	soft_right_degrees(deg);
+}
+
+void pick_from_right(int deg)
+{
+	velocity(200,200);
+	soft_right_2_degrees(deg);
+	_delay_ms(200);
+	back_mm(30);
+	stop();
+	pick();
+	_delay_ms(200);
+	soft_left_degrees(deg);
 }
 
 void parse_string_habitats(char *inp)
@@ -936,6 +959,16 @@ void do_movement(struct coor arr[], int num)
 		{
 			line_follow();
 			lcd_print(1,3,t+1,1);
+		}
+		if (i%2 == 0)
+		{
+			nagada();
+			_delay_ms(200);
+			pick_from_right(80);
+		}
+		else
+		{
+			drop_to_right(45);
 		}
 		lcd_clear();
 		_delay_ms(1000);
