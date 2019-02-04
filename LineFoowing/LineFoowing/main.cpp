@@ -37,7 +37,7 @@ unsigned char Right_white_line = 0;
 
 
 char data[25];
-char h[25] = "16";
+char h[25] = "11";
 char a[25] = "C1";
 int data_count = 0;
 
@@ -432,19 +432,19 @@ void right (void) //Left wheel forward, Right wheel backward
 void soft_left (void) //Left wheel stationary, Right wheel forward
 {
 	motion_set(0x04);
-	velocity(0,100);
+	velocity(0,200); //was 100
 }
 
 void soft_right (void) //Left wheel forward, Right wheel is stationary
 {
 	motion_set(0x02);
-	velocity(100,0);
+	velocity(200,0); //was 100
 }
 
 void left_degrees(unsigned int Degrees)
 {
 	// 88 pulses for 360 degrees rotation 4.090 degrees per count
-	velocity(150,150);
+	velocity(150,150);  //was 150
 	left(); //Turn left
 	angle_rotate(Degrees);
 	last_state = 'l';
@@ -453,7 +453,7 @@ void left_degrees(unsigned int Degrees)
 void right_degrees(unsigned int Degrees)
 {
 	// 88 pulses for 360 degrees rotation 4.090 degrees per count
-	velocity(150,150);
+	velocity(150,150);  //was 150
 	right(); //Turn right
 	angle_rotate(Degrees);
 	last_state = 'r';
@@ -645,7 +645,7 @@ void line_follow()
 		stop();
 		velocity(0,0);
 		node_count++;
-		lcd_print(1,1,node_count,2);
+		lcd_print(1,14,node_count,2);
 		if (last_state == 'l')
 		{
 			last_state = 'r';
@@ -666,6 +666,7 @@ void line_follow()
 			//correction_smart_left();
 			//			velocity(80,255);
 			//			forward();
+			read_line_sensor();
 			while(Center_white_line < 25)
 			{
 				read_line_sensor();
@@ -679,6 +680,7 @@ void line_follow()
 			//correction_smart_right()
 			//			velocity(255,80);
 			//			forward();
+			read_line_sensor();
 			while(Center_white_line < 25)
 			{
 				read_line_sensor();
@@ -695,7 +697,7 @@ void line_follow()
 	}
 	if (debug == true)
 	{
-		lcd_print(1,13,node_count,2);
+		lcd_print(1,14,node_count,2);
 	}
 	}
 	//_delay_ms(200);
@@ -908,13 +910,35 @@ void do_movement(struct coor arr[], int num)
 		if(arr[i].y > 0) dir_transform(curr_dir,'s');
 		if(arr[i].y < 0) dir_transform(curr_dir,'d');
 		//printf("linefoow * %d\n", abs(arr[i].y));
-		for(int t=0; t < arr[i].y; t++)
+		lcd_cursor(1,1);
+		lcd_wr_char('s');	
+		for(int t=0; t < abs(arr[i].y); t++)
+		{	
 			line_follow();
-		if(arr[i].x > 0) dir_transform(curr_dir,'r');
-		if(arr[i].x < 0) dir_transform(curr_dir,'l');
+			lcd_print(1,3,t+1,1);
+		}
+		if(arr[i].x > 0) 
+		{ 
+			dir_transform(curr_dir,'r'); 
+			lcd_cursor(2,1);
+			lcd_wr_char('r');
+		}
+		if(arr[i].x < 0) 
+		{
+			dir_transform(curr_dir,'l'); 
+			lcd_cursor(2,1);
+			lcd_wr_char('l');
+		}
 		//printf("linefoow * %d\n", abs(arr[i].x));
-		for(int t=0; t < arr[i].x; t++)
+		lcd_cursor(1,1);
+		lcd_wr_char('s');		
+		for(int t=0; t < abs(arr[i].x); t++)
+		{
 			line_follow();
+			lcd_print(1,3,t+1,1);
+		}
+		lcd_clear();
+		_delay_ms(1000);
 	}
 }
 
@@ -922,7 +946,7 @@ void do_movement(struct coor arr[], int num)
 int main()
 {
 	init_devices();
-	struct coor disp[40];
+	struct coor disp[8];
 	curr.x = 0;
 	curr.y = 0;
 	def_cells();
@@ -952,6 +976,15 @@ int main()
 	    //printf("%d\n", a[i+1].y);
 	    curr = temp;
     }
+	lcd_print(2,14,num,2);
+	_delay_ms(1000);
+	for (int i = 0; i < num; i++)
+	{
+		lcd_print(1,i+1,abs(disp[i].y),1);
+		lcd_print(2,i+1,abs(disp[i].x),1);
+	}
+	_delay_ms(1000);
+	lcd_clear();
 	do_movement(disp, num);
 	//_delay_ms(5000);
 	//lcd_cursor(1,1);

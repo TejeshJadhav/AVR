@@ -21,6 +21,7 @@ void lcd_home();
 void lcd_cursor(char, char);
 void lcd_print(char, char, unsigned int, int);
 void lcd_string(char*);
+void lcd_clear();
 
 unsigned int temp;
 unsigned int unit;
@@ -151,6 +152,11 @@ void lcd_home()
 	lcd_wr_command(0x80);
 }
 
+void lcd_clear()
+{
+	lcd_wr_command(0x01);
+	lcd_wr_command(0x80);
+}
 
 /*****Function to Print String on LCD*****/
 void lcd_string(char *str)
