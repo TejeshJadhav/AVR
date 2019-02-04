@@ -318,6 +318,7 @@ void servo_1(unsigned char degrees)
 void servo_2(unsigned char degrees)
 {
 	float PositionTiltServo = 0;
+	degrees = abs(90 - degrees);
 	PositionTiltServo = ((float)degrees / 1.86) + 35.0;
 	OCR1BH = 0x00;
 	OCR1BL = (unsigned char) PositionTiltServo;
@@ -755,8 +756,10 @@ int read_proximity()
 
 void nagada()
 {
-	servo_1(0);
+	servo_1(90);
+	_delay_ms(200);
 	servo_2(0);
+	_delay_ms(200);
 }
 
 void pick()
@@ -771,6 +774,7 @@ void pick()
 
 void drop()
 {
+	nagada();
 	servo_2_free();
 	servo_1_free();
 }
@@ -783,6 +787,7 @@ void drop_to_left(int deg)
 	stop();
 	drop();
 	_delay_ms(200);
+	velocity(200,200);
 	soft_left_2_degrees(deg);
 }
 
@@ -794,6 +799,7 @@ void drop_to_right(int deg)
 	stop();
 	drop();
 	_delay_ms(200);
+	velocity(200,200);
 	soft_right_2_degrees(deg);
 }
 
@@ -801,25 +807,85 @@ void drop_to_right(int deg)
 void pick_from_left(int deg)
 {
 	velocity(200,200);
-	soft_left_2_degrees(deg);
+	forward_mm(50);
+	servo_1(0);
 	_delay_ms(200);
-	back_mm(30);
-	stop();
-	pick();
-	_delay_ms(200);
-	soft_right_degrees(deg);
+	servo_2(0);
+	if(deg < 50)
+	{
+		soft_right_degrees(30);
+		forward_mm(50);
+		left_degrees(130);
+		_delay_ms(200);
+		back_mm(70);
+		stop();
+		//pick();
+		servo_1(90);
+		forward_mm(30);
+		for (int i = 20; i <= 90; i++)
+		{
+			servo_2(i);
+			_delay_ms(20);
+		}
+		servo_1(0);
+		_delay_ms(200);
+		right_degrees(80);
+		back_mm(90);	
+	}
+	else
+	{
+		soft_left_2_degrees(deg);
+		_delay_ms(200);
+		back_mm(30);
+		stop();
+		pick();
+		_delay_ms(200);
+		forward_mm(30);
+		soft_right_degrees(deg);
+		smart_right();	
+	}
 }
 
 void pick_from_right(int deg)
 {
 	velocity(200,200);
+	forward_mm(50);
+	servo_1(0);
+	_delay_ms(200);
+	servo_2(0);
+	if(deg < 50)
+	{
+		soft_left_degrees(30);
+		forward_mm(50);
+		right_degrees(130);
+		_delay_ms(200);
+		back_mm(70);
+		stop();
+		//pick();
+		servo_1(90);
+		forward_mm(30);
+		for (int i = 20; i <= 90; i++)
+		{
+			servo_2(i);
+			_delay_ms(20);
+		}
+		servo_1(0);
+		_delay_ms(200);
+		left_degrees(80);
+		back_mm(90);
+	}
+	else
+	{
 	soft_right_2_degrees(deg);
 	_delay_ms(200);
 	back_mm(30);
 	stop();
 	pick();
 	_delay_ms(200);
+	forward_mm(30);
 	soft_left_degrees(deg);
+	smart_left();
+	}
 }
 
 void parse_string_habitats(char *inp)
@@ -984,11 +1050,25 @@ int main()
 	curr.y = 0;
 	def_cells();
 	def_animals();
-	/*while(1)
+	while(1)
 	{
-		left_degrees(85);
+		soft_right_degrees(30);
 		_delay_ms(1000);
+		soft_right_degrees(270);
+		_delay_ms(1000);
+		servo_2(90);
+		_delay_ms(1000);
+		servo_2(0);
+		_delay_ms(1000);
+		nagada();
+		line_follow();
+		_delay_ms(200);
+		pick_from_right(40);
+		line_follow();
+		_delay_ms(200);
+		drop_to_left(45);
 	}
+	/*
 	while(!(delimit == true  && button_flag == true))
 	{
 		_delay_ms(1);
@@ -1019,41 +1099,5 @@ int main()
 	_delay_ms(1000);
 	lcd_clear();
 	do_movement(disp, num);
-	//_delay_ms(5000);
-	//lcd_cursor(1,1);
 	
-	/*nagada();
-
-	while(1)
-	{
-		_delay_ms(200);
-		line_follow();
-		_delay_ms(200);
-		pick();
-		_delay_ms(2000);
-		nagada();
-		//_delay_ms(500);
-		//smart_left();
-		//_delay_ms(500);
-		//line_follow();
-		//_delay_ms(500);
-		//smart_right();
-		//left_degrees(70);  //65 pe working properly;
-		//_delay_ms(500);
-	}*/
-	/*while(1)
-	{
-		//nagada();
-		line_follow();
-		_delay_ms(200);
-		pick_from_right();
-		nagada();
-		line_follow();
-		_delay_ms(200);
-		pick_from_left();
-	}
-	while(1)
-	{
-		do_movement(disp);
-	}*/
 }
